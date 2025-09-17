@@ -1,0 +1,480 @@
+{
+  "name": "Automated Candidate Screening Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute",
+              "minute": 5
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": false,
+          "port": 993,
+          "secure": true
+        },
+        "mailbox": "INBOX",
+        "postProcessAction": "read",
+        "downloadAttachments": true
+      },
+      "id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
+      "name": "Email Trigger",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "credentials": {
+        "imap": {
+          "id": "1",
+          "name": "Gmail IMAP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition1",
+              "leftValue": "={{ $json.to }}",
+              "rightValue": "careers-new-applicants@yourcompany.com",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "condition2",
+              "leftValue": "={{ $json.attachments }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2b3c4d5e-6f7g-8h9i-0j1k-l2m3n4o5p6q7",
+      "name": "Filter Valid Applications",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract candidate information from email\nconst email = $input.first();\n\n// Extract sender name and email\nconst senderEmail = email.json.from.address;\nconst senderName = email.json.from.name || extractNameFromEmail(senderEmail);\n\n// Extract name from email body if not in sender\nlet candidateName = senderName;\nif (!candidateName || candidateName === senderEmail) {\n  candidateName = extractNameFromBody(email.json.text || email.json.html);\n}\n\n// Function to extract name from email address\nfunction extractNameFromEmail(emailAddr) {\n  const localPart = emailAddr.split('@')[0];\n  return localPart.replace(/[._]/g, ' ')\n    .split(' ')\n    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())\n    .join(' ');\n}\n\n// Function to extract name from email body\nfunction extractNameFromBody(text) {\n  if (!text) return '';\n  \n  const namePatterns = [\n    /my name is ([A-Za-z\\s]{2,30})(?:\\s+and|\\s*[,.]|\\s*$)/i,\n    /i am ([A-Z][a-z]+(?:\\s+[A-Z][a-z]+){0,3})(?:\\s+and|\\s*[,.]|\\s*$)/i,\n    /sincerely,?\\s*([A-Za-z\\s]{2,30})\\s*$/i,\n    /regards,?\\s*([A-Za-z\\s]{2,30})\\s*$/i,\n    /best,?\\s*([A-Za-z\\s]{2,30})\\s*$/i\n  ];\n  \n  for (const pattern of namePatterns) {\n    const match = text.match(pattern);\n    if (match) {\n      const name = match[1].trim();\n      const words = name.split(/\\s+/);\n      \n      // Validate it looks like a name\n      if (words.length >= 1 && words.length <= 4 && \n          words.every(word => word.length >= 2)) {\n        \n        // Check for non-name words\n        const nonNameWords = ['applying', 'for', 'the', 'position', 'job', 'role', 'work', 'working'];\n        if (!words.some(word => nonNameWords.includes(word.toLowerCase()))) {\n          return name.split(' ').map(word => \n            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()\n          ).join(' ');\n        }\n      }\n    }\n  }\n  \n  return '';\n}\n\n// Process attachments\nconst resumeAttachments = email.json.attachments?.filter(att => \n  /\\.(pdf|doc|docx|txt)$/i.test(att.filename)\n) || [];\n\nreturn {\n  candidateName: candidateName || 'Unknown Candidate',\n  candidateEmail: senderEmail,\n  subject: email.json.subject,\n  body: email.json.text || email.json.html || '',\n  applicationDate: new Date().toISOString().split('T')[0],\n  resumeAttachments: resumeAttachments,\n  hasResume: resumeAttachments.length > 0,\n  originalEmail: email.json\n};"
+      },
+      "id": "3c4d5e6f-7g8h-9i0j-1k2l-m3n4o5p6q7r8",
+      "name": "Extract Candidate Info",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Keyword screening logic\nconst data = $input.first().json;\n\n// Required keywords and their variations\nconst keywordVariations = {\n  'Mid-level': ['mid-level', 'mid level', 'midlevel', 'intermediate', '3-5 years', 'middle level'],\n  'Python': ['python', 'python3', 'django', 'flask', 'fastapi', 'py'],\n  'GenAI': ['genai', 'gen ai', 'generative ai', 'llm', 'machine learning', 'ai', 'artificial intelligence', 'gpt', 'openai']\n};\n\n// Combine subject and body for searching\nconst searchText = `${data.subject} ${data.body}`.toLowerCase();\n\n// Find matching keywords\nconst foundKeywords = [];\nconst keywordDetails = [];\n\nfor (const [mainKeyword, variations] of Object.entries(keywordVariations)) {\n  let found = false;\n  \n  for (const variation of variations) {\n    if (searchText.includes(variation.toLowerCase())) {\n      foundKeywords.push(mainKeyword);\n      keywordDetails.push({\n        keyword: mainKeyword,\n        variation: variation,\n        found: true\n      });\n      found = true;\n      break;\n    }\n  }\n  \n  if (!found) {\n    keywordDetails.push({\n      keyword: mainKeyword,\n      variation: null,\n      found: false\n    });\n  }\n}\n\n// Determine if candidate is a match (at least 2 keywords)\nconst isMatch = foundKeywords.length >= 2;\nconst screeningResult = isMatch ? 'MATCH' : 'NO_MATCH';\n\nreturn {\n  ...data,\n  foundKeywords: foundKeywords,\n  keywordDetails: keywordDetails,\n  keywordCount: foundKeywords.length,\n  isMatch: isMatch,\n  screeningResult: screeningResult,\n  screeningReason: isMatch ? \n    `Found ${foundKeywords.length}/3 required keywords: ${foundKeywords.join(', ')}` :\n    `Only found ${foundKeywords.length}/3 required keywords: ${foundKeywords.join(', ') || 'none'}`\n};"
+      },
+      "id": "4d5e6f7g-8h9i-0j1k-2l3m-n4o5p6q7r8s9",
+      "name": "Keyword Screening",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition1",
+              "leftValue": "={{ $json.isMatch }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5e6f7g8h-9i0j-1k2l-3m4n-o5p6q7r8s9t0",
+      "name": "Route by Match Status",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.GOOGLE_SHEETS_CANDIDATE_TRACKER_ID }}",
+          "mode": "expression"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Candidate Tracker",
+          "mode": "name"
+        },
+        "columnToMatchOn": "Email",
+        "valueToMatchOn": "={{ $json.candidateEmail }}",
+        "valueInputOption": "USER_ENTERED",
+        "values": {
+          "Name": "={{ $json.candidateName }}",
+          "Email": "={{ $json.candidateEmail }}",
+          "Application Date": "={{ $json.applicationDate }}",
+          "Status": "Pending Review",
+          "Keywords Found": "={{ $json.foundKeywords.join(', ') }}",
+          "Resume File": "={{ $json.hasResume ? 'Yes' : 'No' }}",
+          "Application ID": "={{ 'APP-' + $json.applicationDate.replace(/-/g, '') + '-' + $json.candidateEmail.split('@')[0].toUpperCase() }}"
+        }
+      },
+      "id": "6f7g8h9i-0j1k-2l3m-4n5o-p6q7r8s9t0u1",
+      "name": "Add to Candidate Tracker",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1340,
+        100
+      ],
+      "credentials": {
+        "googleSheetsApi": {
+          "id": "2",
+          "name": "Google Sheets Service Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "resource": "sheet",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.GOOGLE_SHEETS_CANDIDATE_TRACKER_ID }}",
+          "mode": "expression"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Rejected Applications",
+          "mode": "name"
+        },
+        "columnToMatchOn": "Email",
+        "valueToMatchOn": "={{ $json.candidateEmail }}",
+        "valueInputOption": "USER_ENTERED",
+        "values": {
+          "Name": "={{ $json.candidateName }}",
+          "Email": "={{ $json.candidateEmail }}",
+          "Application Date": "={{ $json.applicationDate }}",
+          "Rejection Reason": "={{ $json.screeningReason }}",
+          "Keywords Found": "={{ $json.foundKeywords.join(', ') || 'None' }}"
+        }
+      },
+      "id": "7g8h9i0j-1k2l-3m4n-5o6p-q7r8s9t0u1v2",
+      "name": "Add to Rejected Applications",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1340,
+        300
+      ],
+      "credentials": {
+        "googleSheetsApi": {
+          "id": "2",
+          "name": "Google Sheets Service Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate matched candidate email template\nconst data = $input.first().json;\n\nconst template = `Subject: Application Received - Next Steps for {{ position_title }} Role\n\nDear {{ candidate_name }},\n\nThank you for your interest in joining {{ company_name }}! We have received your application for our {{ position_title }} position and are pleased to inform you that your background aligns well with what we're looking for.\n\nBased on our initial review, we would like to invite you to the next stage of our hiring process. We'd love to schedule a 30-minute screening call to discuss your experience and learn more about your career goals.\n\nPlease use the following link to book a convenient time for our conversation:\n{{ calendly_link }}\n\nDuring this call, we'll discuss:\n• Your experience with {{ keywords_found }}\n• Your career objectives and interests\n• Details about the role and our team\n• Next steps in our hiring process\n\nIf you have any questions or need to reschedule, please don't hesitate to reach out to us at {{ hr_email }}.\n\nWe look forward to speaking with you soon!\n\nBest regards,\n{{ hr_name }}\n{{ company_name }} Hiring Team\n\n---\nApplication ID: {{ application_id }}\nThis is an automated message. Please do not reply directly to this email.`;\n\n// Template variables\nconst templateVars = {\n  candidate_name: data.candidateName,\n  company_name: process.env.COMPANY_NAME || 'Seismic Consulting Group',\n  position_title: process.env.POSITION_TITLE || 'Mid-level Python Developer',\n  calendly_link: process.env.CALENDLY_LINK || 'https://calendly.com/your-link',\n  keywords_found: data.foundKeywords.join(', '),\n  hr_email: process.env.HR_EMAIL || 'hr@yourcompany.com',\n  hr_name: process.env.HR_NAME || 'HR Team',\n  application_id: `APP-${data.applicationDate.replace(/-/g, '')}-${data.candidateEmail.split('@')[0].toUpperCase()}`\n};\n\n// Replace template variables\nlet emailContent = template;\nfor (const [key, value] of Object.entries(templateVars)) {\n  const regex = new RegExp(`{{ ${key} }}`, 'g');\n  emailContent = emailContent.replace(regex, value);\n}\n\n// Extract subject and body\nconst subjectMatch = emailContent.match(/Subject: (.+)\\n/);\nconst subject = subjectMatch ? subjectMatch[1] : 'Application Received - Next Steps';\nconst body = emailContent.replace(/Subject: .+\\n\\n/, '');\n\nreturn {\n  ...data,\n  emailSubject: subject,\n  emailBody: body,\n  emailType: 'matched'\n};"
+      },
+      "id": "8h9i0j1k-2l3m-4n5o-6p7q-r8s9t0u1v2w3",
+      "name": "Generate Matched Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate rejection email template\nconst data = $input.first().json;\n\nconst template = `Subject: Thank you for your application to {{ company_name }}\n\nDear {{ candidate_name }},\n\nThank you for taking the time to apply for the {{ position_title }} position at {{ company_name }}. We appreciate your interest in joining our team.\n\nAfter careful review of your application, we have decided to move forward with other candidates whose experience more closely aligns with our current requirements for this specific role.\n\nWe encourage you to continue following our career opportunities, as we frequently have new openings that might be a better fit for your background and skills. You can view our current openings at {{ careers_page }}.\n\nWe wish you the best of luck in your job search and future career endeavors.\n\nBest regards,\n{{ hr_name }}\n{{ company_name }} Hiring Team\n\n---\nApplication ID: {{ application_id }}\nThis is an automated message. Please do not reply directly to this email.`;\n\n// Template variables\nconst templateVars = {\n  candidate_name: data.candidateName,\n  company_name: process.env.COMPANY_NAME || 'Seismic Consulting Group',\n  position_title: process.env.POSITION_TITLE || 'Mid-level Python Developer',\n  careers_page: process.env.CAREERS_PAGE || 'https://yourcompany.com/careers',\n  hr_name: process.env.HR_NAME || 'HR Team',\n  application_id: `APP-${data.applicationDate.replace(/-/g, '')}-${data.candidateEmail.split('@')[0].toUpperCase()}`\n};\n\n// Replace template variables\nlet emailContent = template;\nfor (const [key, value] of Object.entries(templateVars)) {\n  const regex = new RegExp(`{{ ${key} }}`, 'g');\n  emailContent = emailContent.replace(regex, value);\n}\n\n// Extract subject and body\nconst subjectMatch = emailContent.match(/Subject: (.+)\\n/);\nconst subject = subjectMatch ? subjectMatch[1] : 'Thank you for your application';\nconst body = emailContent.replace(/Subject: .+\\n\\n/, '');\n\nreturn {\n  ...data,\n  emailSubject: subject,\n  emailBody: body,\n  emailType: 'rejected'\n};"
+      },
+      "id": "9i0j1k2l-3m4n-5o6p-7q8r-s9t0u1v2w3x4",
+      "name": "Generate Rejection Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.SMTP_FROM_EMAIL }}",
+        "toEmail": "={{ $json.candidateEmail }}",
+        "subject": "={{ $json.emailSubject }}",
+        "emailType": "text",
+        "message": "={{ $json.emailBody }}",
+        "options": {}
+      },
+      "id": "0j1k2l3m-4n5o-6p7q-8r9s-t0u1v2w3x4y5",
+      "name": "Send Email Response",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        200
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "3",
+          "name": "SMTP Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log workflow completion and statistics\nconst data = $input.first().json;\n\nconst logEntry = {\n  timestamp: new Date().toISOString(),\n  candidateName: data.candidateName,\n  candidateEmail: data.candidateEmail,\n  screeningResult: data.screeningResult,\n  keywordsFound: data.foundKeywords,\n  keywordCount: data.keywordCount,\n  emailType: data.emailType,\n  applicationId: `APP-${data.applicationDate.replace(/-/g, '')}-${data.candidateEmail.split('@')[0].toUpperCase()}`,\n  processingStatus: 'COMPLETED',\n  hasResume: data.hasResume\n};\n\nconsole.log('Workflow completed:', JSON.stringify(logEntry, null, 2));\n\nreturn {\n  ...data,\n  logEntry: logEntry,\n  workflowStatus: 'COMPLETED'\n};"
+      },
+      "id": "1k2l3m4n-5o6p-7q8r-9s0t-u1v2w3x4y5z6",
+      "name": "Log Workflow Completion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Error handling and notification\nconst error = $input.first().json;\n\nconst errorLog = {\n  timestamp: new Date().toISOString(),\n  errorType: 'WORKFLOW_ERROR',\n  errorMessage: error.message || 'Unknown error occurred',\n  candidateEmail: error.candidateEmail || 'unknown',\n  step: error.step || 'unknown',\n  stackTrace: error.stack || 'No stack trace available'\n};\n\nconsole.error('Workflow error:', JSON.stringify(errorLog, null, 2));\n\n// Prepare error notification email\nconst errorNotification = {\n  subject: 'Candidate Screening Workflow Error',\n  body: `An error occurred in the candidate screening workflow:\n\nTimestamp: ${errorLog.timestamp}\nCandidate Email: ${errorLog.candidateEmail}\nError: ${errorLog.errorMessage}\n\nPlease check the workflow logs for more details.\n\nThis is an automated error notification.`,\n  toEmail: process.env.HR_EMAIL || 'hr@yourcompany.com'\n};\n\nreturn {\n  errorLog: errorLog,\n  errorNotification: errorNotification\n};"
+      },
+      "id": "2l3m4n5o-6p7q-8r9s-0t1u-v2w3x4y5z6a7",
+      "name": "Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.SMTP_FROM_EMAIL }}",
+        "toEmail": "={{ $json.errorNotification.toEmail }}",
+        "subject": "={{ $json.errorNotification.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.errorNotification.body }}",
+        "options": {}
+      },
+      "id": "3m4n5o6p-7q8r-9s0t-1u2v-w3x4y5z6a7b8",
+      "name": "Send Error Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        900,
+        500
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "3",
+          "name": "SMTP Credentials"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Email Trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter Valid Applications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Valid Applications": {
+      "main": [
+        [
+          {
+            "node": "Extract Candidate Info",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Candidate Info": {
+      "main": [
+        [
+          {
+            "node": "Keyword Screening",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keyword Screening": {
+      "main": [
+        [
+          {
+            "node": "Route by Match Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Match Status": {
+      "main": [
+        [
+          {
+            "node": "Add to Candidate Tracker",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add to Rejected Applications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add to Candidate Tracker": {
+      "main": [
+        [
+          {
+            "node": "Generate Matched Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add to Rejected Applications": {
+      "main": [
+        [
+          {
+            "node": "Generate Rejection Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Matched Email": {
+      "main": [
+        [
+          {
+            "node": "Send Email Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Rejection Email": {
+      "main": [
+        [
+          {
+            "node": "Send Email Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email Response": {
+      "main": [
+        [
+          {
+            "node": "Log Workflow Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Handler": {
+      "main": [
+        [
+          {
+            "node": "Send Error Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z",
+      "id": "1",
+      "name": "HR Automation"
+    },
+    {
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z",
+      "id": "2",
+      "name": "Email Processing"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "1"
+}

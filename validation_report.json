@@ -1,0 +1,286 @@
+{
+  "validation_timestamp": "2025-09-16T14:35:26.803376",
+  "overall_status": "GOOD",
+  "success_rate": 90.0,
+  "passed_tests": 9,
+  "total_tests": 10,
+  "errors": [
+    "Docs: README.md: Error reading README.md: 'charmap' codec can't decode byte 0x90 in position 1972: character maps to <undefined>"
+  ],
+  "warnings": [],
+  "detailed_results": [
+    {
+      "test": "Python Version",
+      "status": "PASS",
+      "message": "Python 3.9.5 is compatible",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.959703"
+    },
+    {
+      "test": "File: main.py",
+      "status": "PASS",
+      "message": "File exists",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.960750"
+    },
+    {
+      "test": "File: requirements.txt",
+      "status": "PASS",
+      "message": "File exists",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.960750"
+    },
+    {
+      "test": "File: setup.py",
+      "status": "PASS",
+      "message": "File exists",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.960750"
+    },
+    {
+      "test": "File: .env.example",
+      "status": "PASS",
+      "message": "File exists",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.960750"
+    },
+    {
+      "test": "File: walkthrough.md",
+      "status": "PASS",
+      "message": "File exists",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.961764"
+    },
+    {
+      "test": "File: workflow_export.json",
+      "status": "PASS",
+      "message": "File exists",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.961764"
+    },
+    {
+      "test": "File: run_tests.py",
+      "status": "PASS",
+      "message": "File exists",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.961764"
+    },
+    {
+      "test": "File: .gitignore",
+      "status": "PASS",
+      "message": "File exists",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.961764"
+    },
+    {
+      "test": "Directory: config",
+      "status": "PASS",
+      "message": "Directory exists",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.962826"
+    },
+    {
+      "test": "Directory: models",
+      "status": "PASS",
+      "message": "Directory exists",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.962826"
+    },
+    {
+      "test": "Directory: services",
+      "status": "PASS",
+      "message": "Directory exists",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.962826"
+    },
+    {
+      "test": "Directory: workflow",
+      "status": "PASS",
+      "message": "Directory exists",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.964240"
+    },
+    {
+      "test": "Directory: tests",
+      "status": "PASS",
+      "message": "Directory exists",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.964240"
+    },
+    {
+      "test": "Directory: scripts",
+      "status": "PASS",
+      "message": "Directory exists",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.964240"
+    },
+    {
+      "test": "Directory: docker",
+      "status": "PASS",
+      "message": "Directory exists",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:24.964240"
+    },
+    {
+      "test": "Import: config.settings",
+      "status": "PASS",
+      "message": "Configuration module imports successfully",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:25.246576"
+    },
+    {
+      "test": "Import: models.candidate",
+      "status": "PASS",
+      "message": "Data models imports successfully",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:25.344949"
+    },
+    {
+      "test": "Import: services.email_processor",
+      "status": "PASS",
+      "message": "Email processing service imports successfully",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:25.783070"
+    },
+    {
+      "test": "Import: services.keyword_screener",
+      "status": "PASS",
+      "message": "Keyword screening service imports successfully",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:25.783070"
+    },
+    {
+      "test": "Import: services.sheets_manager",
+      "status": "PASS",
+      "message": "Google Sheets service imports successfully",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:25.784311"
+    },
+    {
+      "test": "Import: services.email_templates",
+      "status": "PASS",
+      "message": "Email templates service imports successfully",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:25.784311"
+    },
+    {
+      "test": "Import: workflow.orchestrator",
+      "status": "PASS",
+      "message": "Workflow orchestrator imports successfully",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:25.786485"
+    },
+    {
+      "test": "Dependencies",
+      "status": "PASS",
+      "message": "All 13 dependencies available",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:25.835979"
+    },
+    {
+      "test": "Config: .env.example",
+      "status": "PASS",
+      "message": "All required variables present",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:25.835979"
+    },
+    {
+      "test": "Config: workflow_export.json",
+      "status": "PASS",
+      "message": "Valid workflow specification",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:25.847299"
+    },
+    {
+      "test": "Docker: Dockerfile",
+      "status": "PASS",
+      "message": "Valid Dockerfile structure",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:25.848423"
+    },
+    {
+      "test": "Docker: docker-compose.yml",
+      "status": "PASS",
+      "message": "Valid compose file structure",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:25.849413"
+    },
+    {
+      "test": "Test Suite",
+      "status": "PASS",
+      "message": "Found 2 test files",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:25.849413"
+    },
+    {
+      "test": "Test Execution",
+      "status": "PASS",
+      "message": "All tests passed",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:26.795060"
+    },
+    {
+      "test": "Script: setup_environment.py",
+      "status": "PASS",
+      "message": "Environment setup script is executable",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:26.796105"
+    },
+    {
+      "test": "Script: deploy.py",
+      "status": "PASS",
+      "message": "Deployment script is executable",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:26.797177"
+    },
+    {
+      "test": "Script: monitor.py",
+      "status": "PASS",
+      "message": "Monitoring script is executable",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:26.797177"
+    },
+    {
+      "test": "Main: Command line argument parsing",
+      "status": "PASS",
+      "message": "Component present",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:26.799454"
+    },
+    {
+      "test": "Main: Main function",
+      "status": "PASS",
+      "message": "Component present",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:26.799454"
+    },
+    {
+      "test": "Main: Script execution guard",
+      "status": "PASS",
+      "message": "Component present",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:26.799454"
+    },
+    {
+      "test": "Docs: README.md",
+      "status": "FAIL",
+      "message": "Error reading README.md: 'charmap' codec can't decode byte 0x90 in position 1972: character maps to <undefined>",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:26.799454"
+    },
+    {
+      "test": "Docs: walkthrough.md",
+      "status": "PASS",
+      "message": "Setup and usage guide (1360 words)",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:26.799454"
+    },
+    {
+      "test": "Docs: PROJECT_SUMMARY.md",
+      "status": "PASS",
+      "message": "Project summary (1250 words)",
+      "details": null,
+      "timestamp": "2025-09-16T14:35:26.802346"
+    }
+  ]
+}

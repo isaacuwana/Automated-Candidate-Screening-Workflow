@@ -1,0 +1,269 @@
+{
+  "workflow_name": "Automated Candidate Screening Workflow",
+  "version": "1.0.0",
+  "description": "Professional automated workflow for screening job candidates via email",
+  "author": "Isaac Adeyeye",
+  "created_date": "2024-01-15",
+  "workflow_type": "Python-based Email Processing System",
+  
+  "workflow_steps": [
+    {
+      "step": 1,
+      "name": "Email Monitoring",
+      "description": "Monitor designated email address for new job applications",
+      "component": "EmailProcessor",
+      "trigger": "IMAP email polling",
+      "frequency": "Every 5 minutes (configurable)",
+      "inputs": ["Unread emails"],
+      "outputs": ["ProcessedEmail objects"]
+    },
+    {
+      "step": 2,
+      "name": "Email Parsing",
+      "description": "Extract candidate information and attachments from emails",
+      "component": "EmailProcessor",
+      "trigger": "New email detected",
+      "inputs": ["Raw email message"],
+      "outputs": ["Candidate name", "Email address", "Email content", "Resume attachments"]
+    },
+    {
+      "step": 3,
+      "name": "Keyword Screening",
+      "description": "Analyze email content for required keywords",
+      "component": "KeywordScreener",
+      "trigger": "Email parsed successfully",
+      "keywords_required": ["Mid-level", "Python", "GenAI"],
+      "minimum_matches": 2,
+      "inputs": ["Email subject", "Email body"],
+      "outputs": ["Screening result", "Keywords found", "Match status"]
+    },
+    {
+      "step": 4,
+      "name": "Resume Processing",
+      "description": "Save resume attachments to local storage",
+      "component": "EmailProcessor",
+      "trigger": "Resume attachment detected",
+      "supported_formats": [".pdf", ".doc", ".docx", ".txt"],
+      "inputs": ["Email attachments"],
+      "outputs": ["Saved resume file path"]
+    },
+    {
+      "step": 5,
+      "name": "Google Sheets Update",
+      "description": "Add candidate information to appropriate tracking sheet",
+      "component": "SheetsManager",
+      "trigger": "Candidate screening completed",
+      "sheets": {
+        "matched_candidates": "Candidate Tracker",
+        "rejected_candidates": "Rejected Applications"
+      },
+      "inputs": ["Candidate object"],
+      "outputs": ["Sheet row added", "Update confirmation"]
+    },
+    {
+      "step": 6,
+      "name": "Email Response Generation",
+      "description": "Generate personalized email responses using templates",
+      "component": "EmailTemplates",
+      "trigger": "Sheet update successful",
+      "templates": {
+        "matched": "Acceptance email with scheduling link",
+        "rejected": "Polite rejection email"
+      },
+      "inputs": ["Candidate data", "Screening result"],
+      "outputs": ["Personalized email content"]
+    },
+    {
+      "step": 7,
+      "name": "Candidate Communication",
+      "description": "Send appropriate email response to candidate",
+      "component": "EmailProcessor",
+      "trigger": "Email template generated",
+      "inputs": ["Email content", "Candidate email address"],
+      "outputs": ["Email sent confirmation"]
+    },
+    {
+      "step": 8,
+      "name": "Workflow Logging",
+      "description": "Log all workflow activities and results",
+      "component": "WorkflowOrchestrator",
+      "trigger": "Each workflow step",
+      "log_levels": ["INFO", "WARNING", "ERROR"],
+      "inputs": ["Step results", "Error information"],
+      "outputs": ["Log entries", "Statistics updates"]
+    }
+  ],
+  
+  "configuration": {
+    "email_settings": {
+      "imap_host": "imap.gmail.com",
+      "imap_port": 993,
+      "smtp_host": "smtp.gmail.com",
+      "smtp_port": 587,
+      "check_interval_seconds": 300,
+      "max_emails_per_run": 10
+    },
+    "screening_criteria": {
+      "required_keywords": ["Mid-level", "Python", "GenAI"],
+      "minimum_keyword_matches": 2,
+      "keyword_variations": {
+        "Mid-level": ["mid level", "midlevel", "intermediate", "3-5 years"],
+        "Python": ["python3", "django", "flask", "fastapi"],
+        "GenAI": ["gen ai", "generative ai", "llm", "machine learning", "ai"]
+      }
+    },
+    "google_sheets": {
+      "api_scopes": [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive"
+      ],
+      "sheet_columns": {
+        "candidate_tracker": ["Name", "Email", "Application Date", "Status", "Keywords Found", "Resume File"],
+        "rejected_applications": ["Name", "Email", "Application Date", "Rejection Reason"]
+      }
+    }
+  },
+  
+  "error_handling": {
+    "connection_failures": {
+      "email": "Retry with exponential backoff, alert HR team",
+      "google_sheets": "Queue updates, retry later, alert HR team",
+      "smtp": "Log failure, retry sending, alert HR team"
+    },
+    "data_validation": {
+      "invalid_email": "Log warning, skip processing",
+      "missing_attachment": "Process without resume, note in sheet",
+      "malformed_content": "Use fallback parsing, log warning"
+    },
+    "system_errors": {
+      "disk_space": "Alert administrators, pause processing",
+      "memory_issues": "Restart workflow, alert administrators",
+      "permission_errors": "Alert administrators, log detailed error"
+    }
+  },
+  
+  "monitoring": {
+    "health_checks": [
+      "Email server connectivity",
+      "Google Sheets API access",
+      "Disk space availability",
+      "Log file sizes",
+      "Recent activity detection"
+    ],
+    "metrics_tracked": [
+      "Total applications processed",
+      "Match/rejection rates",
+      "Email delivery success rates",
+      "Processing time per application",
+      "Error frequencies by type"
+    ],
+    "alerting": {
+      "triggers": [
+        "Service connection failures",
+        "High error rates",
+        "Disk space low",
+        "No recent activity",
+        "Processing delays"
+      ],
+      "notification_methods": ["Email to HR team", "Log file entries"]
+    }
+  },
+  
+  "security": {
+    "credential_management": {
+      "email_passwords": "Environment variables or app passwords",
+      "google_api_keys": "Service account JSON file",
+      "storage": "Local file system with restricted permissions"
+    },
+    "data_protection": {
+      "resume_files": "Local storage with access controls",
+      "email_content": "Logged without sensitive information",
+      "candidate_data": "Encrypted in transit to Google Sheets"
+    },
+    "access_control": {
+      "service_accounts": "Minimal required permissions",
+      "file_system": "Restricted access to workflow directories",
+      "network": "HTTPS/TLS for all external communications"
+    }
+  },
+  
+  "deployment_options": {
+    "standalone": {
+      "description": "Direct Python execution on server",
+      "command": "python main.py run",
+      "requirements": ["Python 3.8+", "pip dependencies", "credentials configured"]
+    },
+    "systemd_service": {
+      "description": "Linux systemd service for automatic startup",
+      "service_file": "candidate-screening.service",
+      "commands": ["systemctl start candidate-screening", "systemctl enable candidate-screening"]
+    },
+    "docker": {
+      "description": "Containerized deployment with Docker Compose",
+      "files": ["Dockerfile", "docker-compose.yml"],
+      "command": "docker-compose up -d"
+    }
+  },
+  
+  "testing": {
+    "unit_tests": [
+      "Keyword screening logic",
+      "Email template rendering",
+      "Data model validation",
+      "Configuration loading"
+    ],
+    "integration_tests": [
+      "Email server connectivity",
+      "Google Sheets API integration",
+      "End-to-end workflow execution"
+    ],
+    "test_commands": [
+      "python run_tests.py",
+      "python main.py test",
+      "python main.py single"
+    ]
+  },
+  
+  "maintenance": {
+    "regular_tasks": [
+      "Log file rotation and cleanup",
+      "Resume file organization",
+      "Credential rotation",
+      "Performance monitoring",
+      "Backup creation"
+    ],
+    "backup_strategy": {
+      "data_included": ["Logs", "Resume files", "Configuration templates"],
+      "frequency": "Daily automated backups",
+      "retention": "30 days",
+      "command": "python scripts/backup.py"
+    },
+    "monitoring_tools": [
+      "python scripts/monitor.py check",
+      "python scripts/monitor.py monitor",
+      "python scripts/monitor.py report"
+    ]
+  },
+  
+  "scalability": {
+    "current_capacity": "Designed for small to medium volume (100-500 applications/day)",
+    "bottlenecks": [
+      "Sequential email processing",
+      "Google Sheets API rate limits",
+      "Single-threaded execution"
+    ],
+    "scaling_options": [
+      "Parallel processing implementation",
+      "Database backend for high volume",
+      "Message queue for async processing",
+      "Load balancing for multiple instances"
+    ]
+  },
+  
+  "integration_points": {
+    "email_providers": ["Gmail (primary)", "Outlook", "Custom IMAP servers"],
+    "storage_systems": ["Google Sheets (primary)", "Excel files", "Database systems"],
+    "scheduling_tools": ["Calendly (primary)", "Microsoft Bookings", "Custom calendar APIs"],
+    "notification_systems": ["SMTP email", "Slack webhooks", "Microsoft Teams"]
+  }
+}
